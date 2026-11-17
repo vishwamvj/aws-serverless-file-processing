@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Cloud File Processing System</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --blue-900: #123766;
+            --blue-700: #1d5fbf;
+            --blue-600: #2672d8;
+            --blue-100: #eaf3ff;
+            --ink: #172b4d;
+            --muted: #64748b;
+            --line: #dce5f0;
+            --surface: #ffffff;
+            --canvas: #f3f7fc;
+            --green: #13795b;
+            --green-bg: #e9f8f1;
+            --red: #b42318;
+            --red-bg: #fff0ef;
+            --amber: #8a5700;
+            --amber-bg: #fff6df;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--canvas);
+            color: var(--ink);
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        .page {
+            width: min(1120px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 48px 0;
+        }
+
+        .page-header {
+            margin-bottom: 28px;
+        }
+
+        .eyebrow {
+            margin: 0 0 10px;
+            color: var(--blue-700);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--blue-900);
+            font-size: clamp(28px, 4vw, 38px);
+            letter-spacing: -0.035em;
+            line-height: 1.15;
+        }
+
+        .intro {
+            max-width: 620px;
+            margin: 12px 0 0;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .card {
+            min-width: 0;
+            padding: 26px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--surface);
+            box-shadow: 0 12px 32px rgba(24, 55, 96, 0.06);
+        }
+
+        .card-heading {
+            margin-bottom: 22px;
+        }
+
+        .card-heading h2 {
+            margin: 0;
+            color: var(--blue-900);
+            font-size: 20px;
+        }
+
+        .card-heading p {
+            margin: 7px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .file-picker {
+            display: grid;
+            gap: 12px;
+            padding: 22px;
+            border: 1.5px dashed #a9bfd9;
+            border-radius: 12px;
+            background: #f8fbff;
+        }
+
+        .file-picker label {
+            color: var(--ink);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        input[type="file"]::file-selector-button {
+            margin-right: 12px;
+            padding: 9px 13px;
+            border: 1px solid #c9d8ea;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--blue-900);
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .selected-file {
+            min-height: 20px;
+            overflow-wrap: anywhere;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .primary-button,
+        .download-button {
+            display: inline-flex;
+            min-height: 46px;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            border: 0;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 750;
+            text-decoration: none;
+            transition: background-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .primary-button {
+            width: 100%;
+            margin-top: 16px;
+            background: var(--blue-700);
+            color: #fff;
+        }
+
+        .primary-button:hover:not(:disabled),
+        .download-button:hover:not(:disabled) {
+            background: var(--blue-900);
+            transform: translateY(-1px);
+        }
+
+        .primary-button:disabled,
+        .download-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .progress-wrap {
+            margin-top: 15px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        progress {
+            display: block;
+            width: 100%;
+            height: 9px;
+            overflow: hidden;
+            border: 0;
+            border-radius: 999px;
+            background: #e7eef7;
+            accent-color: var(--blue-600);
+        }
+
+        progress::-webkit-progress-bar {
+            border-radius: 999px;
+            background: #e7eef7;
+        }
+
+        progress::-webkit-progress-value {
+            border-radius: 999px;
+            background: var(--blue-600);
+        }
+
+        progress::-moz-progress-bar {
+            border-radius: 999px;
+            background: var(--blue-600);
+        }
+
+        .notice {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: 9px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .notice.info {
+            background: var(--blue-100);
+            color: var(--blue-900);
+        }
+
+        .notice.warning {
+            background: var(--amber-bg);
+            color: var(--amber);
+        }
+
+        .notice.error {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+        .status-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .status-pill {
+            flex: 0 0 auto;
+            padding: 7px 11px;
+            border-radius: 999px;
+            background: #eef2f7;
+            color: #53657c;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+        }
+
+        .status-pill.processing {
+            background: var(--blue-100);
+            color: var(--blue-700);
+        }
+
+        .status-pill.uploaded {
+            background: var(--amber-bg);
+            color: var(--amber);
+        }
+
+        .status-pill.completed {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        .status-pill.failed {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: minmax(110px, 0.36fr) minmax(0, 1fr);
+            gap: 0;
+            margin: 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .details dt,
+        .details dd {
+            margin: 0;
+            padding: 13px 0;
+            border-bottom: 1px solid var(--line);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .details dt {
+            padding-right: 12px;
+            color: var(--muted);
+        }
+
+        .details dd {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .download-area {
+            margin-top: 20px;
+            padding-top: 19px;
+            border-top: 1px solid var(--line);
+        }
+
+        .result-area {
+            margin-top: 22px;
+        }
+
+        .result-area h3 {
+            margin: 0 0 12px;
+            color: var(--blue-900);
+            font-size: 15px;
+        }
+
+        .download-area h3 {
+            margin: 0 0 6px;
+            color: var(--blue-900);
+            font-size: 15px;
+        }
+
+        .download-area p {
+            margin: 0 0 13px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .download-button {
+            padding: 0 17px;
+            background: var(--blue-700);
+            color: #fff;
+        }
+
+        .empty-state {
+            margin: 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f7f9fc;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .page-footer {
+            margin-top: 24px;
+            color: #8795a8;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 760px) {
+            .page {
+                width: min(100% - 28px, 560px);
+                padding: 30px 0;
+            }
+
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 21px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .details {
+                grid-template-columns: 1fr;
+            }
+
+            .details dt {
+                padding: 12px 0 3px;
+                border-bottom: 0;
+            }
+
+            .details dd {
+                padding: 2px 0 12px;
+            }
+
+            .status-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="page">
+    <header class="page-header">
+        <p class="eyebrow">File processing dashboard</p>
+        <h1>AWS Cloud File Processing System</h1>
+        <p class="intro">Upload a file and follow its processing status. Download the processed output through the application when it is ready.</p>
+    </header>
+
+    <div class="dashboard">
+        <section class="card" aria-labelledby="uploadTitle">
+            <div class="card-heading">
+                <h2 id="uploadTitle">Upload a file</h2>
+                <p>Select a PDF or image to send to the existing processing workflow.</p>
+            </div>
+
+            <form id="uploadForm" action="/api/files/upload" method="post" enctype="multipart/form-data">
+                <div class="file-picker">
+                    <label for="fileInput">Choose a file</label>
+                    <input type="file" id="fileInput" name="file" required>
+                    <div class="selected-file" id="selectedFile" aria-live="polite">No file selected</div>
+                </div>
+                <button class="primary-button" type="submit" id="uploadBtn" disabled>Upload file</button>
+                <div class="progress-wrap" id="progressWrap" hidden>
+                    <div class="progress-label">
+                        <span id="progressText">Uploading</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <progress id="uploadProgress" max="100" value="0" aria-label="Upload progress"></progress>
+                </div>
+            </form>
+
+            <div class="notice" id="uploadNotice" role="status" aria-live="polite" hidden></div>
+        </section>
+
+        <section class="card" aria-labelledby="processingTitle">
+            <div class="status-header">
+                <div class="card-heading">
+                    <h2 id="processingTitle">Processing status</h2>
+                    <p id="statusDescription">Upload a file to begin tracking its processing.</p>
+                </div>
+                <span class="status-pill" id="statusPill">WAITING</span>
+            </div>
+
+            <dl class="details">
+                <dt>Original filename</dt>
+                <dd id="originalName">—</dd>
+                <dt>File type</dt>
+                <dd id="fileType">—</dd>
+                <dt>Input bucket</dt>
+                <dd id="inputBucket">—</dd>
+                <dt>Input object key</dt>
+                <dd id="originalKey">—</dd>
+                <dt>Output bucket</dt>
+                <dd id="outputBucket">—</dd>
+                <dt>Processed output filename</dt>
+                <dd id="processedName">—</dd>
+                <dt>Processed output key</dt>
+                <dd id="processedKey">—</dd>
+                <dt>Processing timestamp</dt>
+                <dd id="processedAt">—</dd>
+            </dl>
+
+            <div class="notice" id="processingNotice" role="status" aria-live="polite" hidden></div>
+
+            <section class="result-area" id="pdfResult" aria-labelledby="pdfResultTitle" hidden>
+                <h3 id="pdfResultTitle">PDF extraction result</h3>
+                <dl class="details">
+                    <dt>Pages</dt>
+                    <dd id="pageCount">—</dd>
+                    <dt>Original PDF size</dt>
+                    <dd id="pdfSize">—</dd>
+                    <dt>Extracted text size</dt>
+                    <dd id="extractedTextSize">—</dd>
+                </dl>
+            </section>
+
+            <section class="result-area" id="imageResult" aria-labelledby="imageResultTitle" hidden>
+                <h3 id="imageResultTitle">Optimized image result</h3>
+                <dl class="details">
+                    <dt>Output image</dt>
+                    <dd id="imageOutputName">—</dd>
+                    <dt>Output format</dt>
+                    <dd id="imageFormat">—</dd>
+                    <dt>Original image size</dt>
+                    <dd id="originalSize">—</dd>
+                    <dt>Optimized image size</dt>
+                    <dd id="processedSize">—</dd>
+                    <dt>Size reduction</dt>
+                    <dd id="sizeReduction">—</dd>
+                </dl>
+            </section>
+
+            <div class="download-area">
+                <h3>Download</h3>
+                <p id="downloadDescription">The download button will appear after the backend reports successful processing.</p>
+                <button class="download-button" type="button" id="downloadBtn" hidden>Download processed file</button>
+            </div>
+        </section>
+    </div>
+
+    <footer class="page-footer">Downloads are served through the Spring Boot application.</footer>
+</main>
+
+<script>
+    const uploadForm = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const selectedFile = document.getElementById('selectedFile');
+    const progressWrap = document.getElementById('progressWrap');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('progressText');
+    const progressPercent = document.getElementById('progressPercent');
+    const uploadNotice = document.getElementById('uploadNotice');
+    const processingNotice = document.getElementById('processingNotice');
+    const statusPill = document.getElementById('statusPill');
+    const statusDescription = document.getElementById('statusDescription');
+    const originalName = document.getElementById('originalName');
+    const fileType = document.getElementById('fileType');
+    const originalKey = document.getElementById('originalKey');
+    const inputBucket = document.getElementById('inputBucket');
+    const outputBucket = document.getElementById('outputBucket');
+    const processedName = document.getElementById('processedName');
+    const processedKey = document.getElementById('processedKey');
+    const processedAt = document.getElementById('processedAt');
+    const pdfResult = document.getElementById('pdfResult');
+    const imageResult = document.getElementById('imageResult');
+    const pageCount = document.getElementById('pageCount');
+    const pdfSize = document.getElementById('pdfSize');
+    const extractedTextSize = document.getElementById('extractedTextSize');
+    const imageOutputName = document.getElementById('imageOutputName');
+    const imageFormat = document.getElementById('imageFormat');
+    const originalSize = document.getElementById('originalSize');
+    const processedSize = document.getElementById('processedSize');
+    const sizeReduction = document.getElementById('sizeReduction');
+    const downloadDescription = document.getElementById('downloadDescription');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    const INITIAL_POLL_INTERVAL_MS = 3000;
+    const MAX_POLL_INTERVAL_MS = 15000;
+    const POLL_TIMEOUT_MS = 10 * 60 * 1000;
+
+    const state = {
+        operationId: 0,
+        fileKey: null,
+        fileType: null,
+        processedKey: null,
+        pollTimer: null,
+        pollController: null,
+        pollStartedAt: null,
+        pollDelayMs: INITIAL_POLL_INTERVAL_MS,
+        status: 'WAITING',
+        isPolling: false,
+        isBusy: false,
+        isDownloading: false
+    };
+
+    fileInput.addEventListener('change', function () {
+        const file = fileInput.files && fileInput.files[0];
+        selectedFile.textContent = file ? file.name : 'No file selected';
+        uploadBtn.disabled = state.isBusy || !file;
+    });
+
+    uploadForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const file = fileInput.files && fileInput.files[0];
+        if (!file || state.isBusy) {
+            return;
+        }
+
+        const formData = new FormData(uploadForm);
+        stopPolling();
+        const operationId = ++state.operationId;
+        state.fileKey = null;
+        state.processedKey = null;
+        state.fileType = detectFileType(file.name);
+        state.isBusy = true;
+
+        resetStatus();
+        originalName.textContent = file.name;
+        fileType.textContent = state.fileType;
+        setStatus('PROCESSING', 'Uploading your file...');
+        showNotice(uploadNotice, 'info', 'Uploading file to the application...');
+        progressWrap.hidden = false;
+        uploadProgress.value = 0;
+        progressText.textContent = 'Uploading';
+        progressPercent.textContent = '0%';
+        setBusy(true);
+
+        try {
+            const result = await uploadFile(formData);
+            if (operationId !== state.operationId) {
+                return;
+            }
+
+            state.fileKey = result.fileKey;
+            originalKey.textContent = result.fileKey;
+            uploadForm.reset();
+            selectedFile.textContent = 'Upload complete. Select another file after processing finishes.';
+            uploadProgress.value = 100;
+            progressText.textContent = 'Upload complete';
+            progressPercent.textContent = '100%';
+            showNotice(uploadNotice, 'info', result.message || 'File uploaded successfully.');
+            state.pollStartedAt = Date.now();
+            state.pollDelayMs = INITIAL_POLL_INTERVAL_MS;
+            setStatus('UPLOADED', 'Original file uploaded; waiting for processing metadata.');
+            scheduleStatusRetry(operationId);
+        } catch (error) {
+            if (operationId !== state.operationId) {
+                return;
+            }
+            setStatus('FAILED', 'The upload or status request failed.');
+            showNotice(uploadNotice, 'error', error.message || 'The upload could not be completed.');
+            showNotice(processingNotice, 'error', error.message || 'The operation could not be completed.');
+            finishOperation(operationId);
+        }
+    });
+
+    async function uploadFile(formData) {
+        return new Promise(function (resolve, reject) {
+            const request = new XMLHttpRequest();
+            request.open('POST', '/api/files/upload');
+
+            request.upload.addEventListener('progress', function (event) {
+                if (!event.lengthComputable) {
+                    progressText.textContent = 'Uploading';
+                    return;
+                }
+                const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
+                uploadProgress.value = percent;
+                progressPercent.textContent = percent + '%';
+                progressText.textContent = 'Uploading';
+            });
+
+            request.addEventListener('load', function () {
+                let data;
+                try {
+                    data = JSON.parse(request.responseText);
+                } catch (error) {
+                    reject(new Error('The server returned an invalid upload response.'));
+                    return;
+                }
+
+                if (request.status < 200 || request.status >= 300) {
+                    reject(new Error(data.error || 'Upload failed with HTTP status ' + request.status + '.'));
+                    return;
+                }
+                if (typeof data.fileKey !== 'string' || !data.fileKey.trim()) {
+                    reject(new Error('The upload response did not contain a valid fileKey.'));
+                    return;
+                }
+                resolve(data);
+            });
+
+            request.addEventListener('error', function () {
+                reject(new Error('A network error prevented the file upload.'));
+            });
+            request.addEventListener('abort', function () {
+                reject(new Error('The file upload was cancelled.'));
+            });
+
+            request.send(formData);
+        });
+    }
+
+    async function pollStatus(operationId) {
+        if (operationId !== state.operationId || !state.fileKey || state.isPolling) {
+            return;
+        }
+
+        if (Date.now() - state.pollStartedAt >= POLL_TIMEOUT_MS) {
+            failStatus(operationId, 'Processing did not finish within 10 minutes. Check the processing logs and try again later.');
+            return;
+        }
+
+        state.isPolling = true;
+        let retry = false;
+        const controller = new AbortController();
+        state.pollController = controller;
+
+        try {
+            const url = new URL('/api/files/status', window.location.origin);
+            url.searchParams.set('key', state.fileKey);
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                signal: controller.signal
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (error) {
+                failStatus(operationId, 'The status endpoint returned invalid JSON.');
+                return;
+            }
+
+            if (!response.ok) {
+                if (response.status === 429 || response.status >= 500) {
+                    setStatus(state.status === 'UPLOADED' ? 'UPLOADED' : 'PROCESSING',
+                        'The metadata service is temporarily unavailable.');
+                    showNotice(processingNotice, 'warning',
+                        'Temporary service error. Retrying with a backoff.');
+                    retry = true;
+                    return;
+                }
+                failStatus(operationId, data && data.error
+                    ? data.error
+                    : 'Status check failed with HTTP status ' + response.status + '.');
+                return;
+            }
+
+            if (!data || typeof data !== 'object'
+                    || data.fileKey !== state.fileKey
+                    || !(data.processedKey === null
+                        || (typeof data.processedKey === 'string'
+                            && data.processedKey.trim()))
+                    || typeof data.ready !== 'boolean'
+                    || typeof data.status !== 'string') {
+                failStatus(operationId, 'The status endpoint response did not match the expected file status format.');
+                return;
+            }
+
+            updateMetadata(data);
+            const status = data.status.toUpperCase();
+            if (status === 'FAILED') {
+                failStatus(operationId, data.error || 'The backend reported that processing failed.');
+                return;
+            }
+
+            if (status === 'COMPLETED' && data.ready === true
+                    && typeof data.processedKey === 'string'
+                    && data.processedKey.trim()) {
+                state.processedKey = data.processedKey;
+                processedKey.textContent = data.processedKey;
+                processedName.textContent = getFilename(data.processedKey);
+                setStatus('COMPLETED', 'Processing completed successfully.');
+                showNotice(processingNotice, 'info', 'The processed file is ready to download.');
+                downloadDescription.textContent = 'Download the processed file through Spring Boot.';
+                downloadBtn.textContent = state.fileType === 'PDF'
+                    ? 'Download extracted PDF text'
+                    : 'Download processed image';
+                downloadBtn.hidden = false;
+                finishOperation(operationId);
+                return;
+            }
+
+            if (status === 'UPLOADED' && data.ready === false) {
+                setStatus('UPLOADED', 'Waiting for the processing workflow to publish metadata.');
+                scheduleStatusRetry(operationId);
+                retry = true;
+                return;
+            }
+
+            if (status !== 'PROCESSING' || data.ready !== false) {
+                failStatus(operationId, 'The status endpoint returned an unsupported or inconsistent processing state.');
+                return;
+            }
+
+            state.processedKey = data.processedKey;
+            setStatus('PROCESSING', 'Your file is still being processed.');
+            scheduleStatusRetry(operationId);
+            retry = true;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
+            setStatus(state.status === 'UPLOADED' ? 'UPLOADED' : 'PROCESSING',
+                'Unable to reach the status endpoint.');
+            showNotice(processingNotice, 'warning',
+                'Network error while checking status. Retrying with a backoff.');
+            retry = true;
+        } finally {
+            state.isPolling = false;
+            if (state.pollController === controller) {
+                state.pollController = null;
+            }
+            if (retry && operationId === state.operationId && state.isBusy) {
+                schedulePoll(operationId);
+            }
+        }
+    }
+
+    function schedulePoll(operationId) {
+        if (state.pollTimer !== null || operationId !== state.operationId || !state.isBusy) {
+            return;
+        }
+        const remainingMs = POLL_TIMEOUT_MS - (Date.now() - state.pollStartedAt);
+        if (remainingMs <= 0) {
+            failStatus(operationId, 'Processing did not finish within 10 minutes. Check the processing logs and try again later.');
+            return;
+        }
+        const delayMs = Math.min(state.pollDelayMs, remainingMs);
+        state.pollDelayMs = Math.min(
+            Math.round(state.pollDelayMs * 1.5),
+            MAX_POLL_INTERVAL_MS);
+        state.pollTimer = window.setTimeout(function () {
+            state.pollTimer = null;
+            pollStatus(operationId);
+        }, delayMs);
+    }
+
+    function scheduleStatusRetry(operationId) {
+        const nextCheckSeconds = Math.ceil(state.pollDelayMs / 1000);
+        showNotice(processingNotice, 'info',
+            'Next status check in about ' + nextCheckSeconds + ' seconds.');
+        schedulePoll(operationId);
+    }
+
+    function failStatus(operationId, message) {
+        if (operationId !== state.operationId) {
+            return;
+        }
+        setStatus('FAILED', 'Processing status could not be completed.');
+        showNotice(processingNotice, 'error', message);
+        finishOperation(operationId);
+    }
+
+    function finishOperation(operationId) {
+        if (operationId !== state.operationId) {
+            return;
+        }
+        if (state.pollTimer !== null) {
+            window.clearTimeout(state.pollTimer);
+            state.pollTimer = null;
+        }
+        if (state.pollController) {
+            state.pollController.abort();
+            state.pollController = null;
+        }
+        state.isPolling = false;
+        state.isBusy = false;
+        state.pollStartedAt = null;
+        setBusy(false);
+    }
+
+    function stopPolling() {
+        if (state.pollTimer !== null) {
+            window.clearTimeout(state.pollTimer);
+            state.pollTimer = null;
+        }
+        if (state.pollController) {
+            state.pollController.abort();
+            state.pollController = null;
+        }
+        state.isPolling = false;
+        state.pollStartedAt = null;
+    }
+
+    function setBusy(busy) {
+        fileInput.disabled = busy;
+        uploadBtn.disabled = busy || !fileInput.files || fileInput.files.length === 0;
+        uploadBtn.textContent = busy ? 'Processing...' : 'Upload file';
+    }
+
+    function setStatus(status, description) {
+        state.status = status;
+        statusPill.textContent = status;
+        statusPill.className = 'status-pill ' + status.toLowerCase();
+        statusDescription.textContent = description;
+    }
+
+    function updateMetadata(data) {
+        if (typeof data.fileName === 'string' && data.fileName) {
+            originalName.textContent = data.fileName;
+        }
+        if (typeof data.fileType === 'string' && data.fileType) {
+            state.fileType = data.fileType.toUpperCase();
+        }
+        fileType.textContent = state.fileType || '—';
+        inputBucket.textContent = data.inputBucket || '—';
+        originalKey.textContent = data.inputKey || data.fileKey || '—';
+        outputBucket.textContent = data.outputBucket || '—';
+        processedAt.textContent = data.processedAt || '—';
+
+        const outputKey = data.outputKey || data.processedKey;
+        state.processedKey = outputKey || null;
+        processedKey.textContent = outputKey || '—';
+        processedName.textContent = outputKey ? getFilename(outputKey) : '—';
+
+        const hasMetadata = data.metadataAvailable === true;
+        pdfResult.hidden = !hasMetadata || state.fileType !== 'PDF';
+        imageResult.hidden = !hasMetadata || state.fileType !== 'IMAGE';
+
+        pageCount.textContent = formatOptional(data.pageCount);
+        pdfSize.textContent = formatBytes(data.pdfSizeBytes);
+        extractedTextSize.textContent = formatBytes(data.extractedTextBytes);
+        imageOutputName.textContent = outputKey ? getFilename(outputKey) : '—';
+        imageFormat.textContent = outputKey ? getFileExtension(outputKey) : '—';
+        const optimizedSizeBytes = data.optimizedSizeBytes !== null
+                && data.optimizedSizeBytes !== undefined
+            ? data.optimizedSizeBytes
+            : data.processedSizeBytes;
+        originalSize.textContent = formatKilobytes(data.originalSizeBytes);
+        processedSize.textContent = formatKilobytes(optimizedSizeBytes);
+        sizeReduction.textContent = typeof data.originalSizeBytes === 'number'
+                && Number.isFinite(data.originalSizeBytes)
+                && data.originalSizeBytes > 0
+                && typeof data.sizeReductionPercent === 'number'
+                && Number.isFinite(data.sizeReductionPercent)
+            ? data.sizeReductionPercent.toFixed(2) + '%'
+            : 'Not reported by the metadata API';
+    }
+
+    function formatOptional(value) {
+        return value === null || value === undefined ? 'Not reported' : String(value);
+    }
+
+    function formatBytes(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+            return 'Not reported by the metadata API';
+        }
+        if (value < 1024) {
+            return value + ' B';
+        }
+        const units = ['KB', 'MB', 'GB', 'TB'];
+        let size = value / 1024;
+        let unit = 0;
+        while (size >= 1024 && unit < units.length - 1) {
+            size /= 1024;
+            unit++;
+        }
+        return size.toFixed(1) + ' ' + units[unit];
+    }
+
+    function formatKilobytes(value) {
+        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+            return 'Not reported by the metadata API';
+        }
+        return (value / 1024).toFixed(2) + ' KB';
+    }
+
+    function getFileExtension(key) {
+        const filename = getFilename(key);
+        const dot = filename.lastIndexOf('.');
+        return dot >= 0 ? filename.substring(dot + 1).toUpperCase() : '—';
+    }
+
+    function showNotice(element, type, message) {
+        element.className = 'notice ' + type;
+        element.textContent = message;
+        element.hidden = !message;
+    }
+
+    function resetStatus() {
+        state.processedKey = null;
+        originalKey.textContent = '—';
+        processedKey.textContent = '—';
+        processedName.textContent = '—';
+        inputBucket.textContent = '—';
+        outputBucket.textContent = '—';
+        processedAt.textContent = '—';
+        pdfResult.hidden = true;
+        imageResult.hidden = true;
+        downloadBtn.hidden = true;
+        downloadDescription.textContent = 'The download button will appear after the backend reports successful processing.';
+        showNotice(processingNotice, '', '');
+        showNotice(uploadNotice, '', '');
+    }
+
+    function detectFileType(filename) {
+        const extension = filename.includes('.')
+            ? filename.substring(filename.lastIndexOf('.') + 1).toLowerCase()
+            : '';
+        if (extension === 'pdf') {
+            return 'PDF';
+        }
+        if (['jpg', 'jpeg', 'png'].includes(extension)) {
+            return 'IMAGE';
+        }
+        return 'OTHER';
+    }
+
+    function getFilename(key) {
+        return key.substring(key.lastIndexOf('/') + 1) || key;
+    }
+
+    downloadBtn.addEventListener('click', async function () {
+        if (!state.processedKey || state.isDownloading) {
+            return;
+        }
+
+        state.isDownloading = true;
+        downloadBtn.disabled = true;
+        showNotice(processingNotice, 'info', 'Preparing your download...');
+
+        try {
+            const path = state.fileType === 'PDF'
+                ? '/api/files/download/pdf'
+                : '/api/files/download';
+            const url = new URL(path, window.location.origin);
+            url.searchParams.set('key', state.processedKey);
+
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                headers: { 'Accept': '*/*' }
+            });
+
+            if (!response.ok) {
+                let message = 'Download failed with HTTP status ' + response.status + '.';
+                try {
+                    const errorBody = await response.json();
+                    if (errorBody && errorBody.error) {
+                        message = errorBody.error;
+                    }
+                } catch (error) {
+                    // Keep the HTTP status message when the server does not return JSON.
+                }
+                throw new Error(message);
+            }
+
+            const blob = await response.blob();
+            const filename = getDownloadFilename(
+                response.headers.get('Content-Disposition'),
+                state.processedKey);
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(function () {
+                URL.revokeObjectURL(objectUrl);
+            }, 1000);
+            showNotice(processingNotice, 'info', 'Download started.');
+        } catch (error) {
+            showNotice(processingNotice, 'error', error.message || 'The processed file could not be downloaded.');
+        } finally {
+            state.isDownloading = false;
+            downloadBtn.disabled = false;
+        }
+    });
+
+    function getDownloadFilename(contentDisposition, key) {
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="([^"]+)"/i);
+            if (match && match[1]) {
+                return match[1];
+            }
+        }
+        return getFilename(key);
+    }
+
+    window.addEventListener('pagehide', stopPolling);
+</script>
+</body>
+</html>
